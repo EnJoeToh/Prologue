@@ -1,6 +1,8 @@
 #! ruby -EUTF-8
 # encoding: utf-8
 
+require 'pp'
+
 #数字 -> 漢数字変換
 def n_to_k num
 	kanji = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九"]
@@ -133,6 +135,62 @@ msg = msg.join("、")
 body[10].gsub!("<rank100_10>", msg)
 
 
+(1..8).each do |ch|
+	File.write("./tmp/#{ch.to_s}.dat", body[ch].gsub("、", "、\n").gsub("。", "。\n"))
+end
+
+bag = []
+bag << `mecab ./tmp/1.dat`.split("\n")
+bag << `mecab ./tmp/2.dat`.split("\n")
+bag << `mecab ./tmp/3.dat`.split("\n")
+bag << `mecab ./tmp/4.dat`.split("\n")
+bag << `mecab ./tmp/5.dat`.split("\n")
+bag << `mecab ./tmp/6.dat`.split("\n")
+bag << `mecab ./tmp/7.dat`.split("\n")
+bag << `mecab ./tmp/8.dat`.split("\n")
+
+words_bag = []
+
+bag.each do |i|
+	i.delete("EOS")
+	i.map! do |j|
+		j.split("\t")
+	end
+	i.map! do |j|
+		j[1].split(",").unshift(j[0])
+	end
+	words_bag += i
+end
+
+#pp words_bag.uniq.size
+
+words_bag_org = words_bag.map do |i|
+	a = i[1], i[-3]
+end
+
+#pp words_bag_org.uniq.size
+
+verb_bag = words_bag.select {|mecab| mecab[1] == "動詞"}
+adv_bag = words_bag.select {|mecab| mecab[1] == "副詞"}
+adj_bag = words_bag.select {|mecab| mecab[1] == "形容詞"}
+
+verb_bag_org = verb_bag.map {|i| a = i[1], i[-3]}
+adv_bag_org = adv_bag.map {|i| a = i[1], i[-3]}
+adj_bag_org = adj_bag.map {|i| a = i[1], i[-3]}
+
+#p verb_bag_org.uniq.size
+#p adv_bag_org.uniq.size
+#p adj_bag_org.uniq.size
+
+body[10].gsub!("<verb_num_10>", n_to_k(verb_bag_org.uniq.size))
+body[10].gsub!("<adv_num_10>", n_to_k(adv_bag_org.uniq.size))
+body[10].gsub!("<adj_num_10>", n_to_k(adj_bag_org.uniq.size))
+
+adj_list = adj_bag_org.map {|i| i[1]}
+#puts adj_list.uniq.sort.join("、")
+
+body[10].gsub!("<adj_list>", adj_list.uniq.sort.join("、"))
+
 #ch 2-12 末尾追加
 
 new_letters = Hash.new
@@ -160,8 +218,8 @@ end
 	body[ch_num] += msg
 end
 
-puts body[10]
-__END__
+#puts body[10]
+
 body.each do |ch, doc|
 	puts doc
 	puts "\n"
